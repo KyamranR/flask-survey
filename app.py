@@ -50,4 +50,4 @@ def handle_answer():
 @app.route('/thankyou')
 def thank_you():
     """Basic Thank you"""
-    return "Thank you"
+    return render_template("thankyou.html")
