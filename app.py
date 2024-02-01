@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 from surveys import satisfaction_survey
 
@@ -13,15 +13,20 @@ toolbar = DebugToolbarExtension(app)
 
 responses = []
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def start_survey():
     """Starting the survey"""
+    if request.method == 'POST':
+        session['responses'] = []
+        return redirect('/questions/0')
+    
     return render_template('start.html', survey=satisfaction_survey)
 
 
 @app.route('/questions/<int:question_id>')
 def show_question(question_id):
     """Check if the question_id is valid, if not redirect to the correct URL"""
+    responses = session.get('responses', [])
     if question_id < len(responses):
         return redirect(f"/questions/{len(responses)}")
     
@@ -38,7 +43,12 @@ def show_question(question_id):
 def handle_answer():
     """Handling answer submission"""
     answer = request.form.get("answer")
+
+    responses = session.get('responses', [])
+
     responses.append(answer)
+
+    session['responses'] = responses
 
     if len(responses) == len(satisfaction_survey.questions):
         return redirect("/thankyou")
@@ -49,5 +59,6 @@ def handle_answer():
 
 @app.route('/thankyou')
 def thank_you():
-    """Basic Thank you"""
-    return render_template("thankyou.html")
+    """Display thank you with surevey responses"""
+    survey_responses = zip(satisfaction_survey.questions, session['responses'])
+    return render_template("thankyou.html", survey_responses=survey_responses)
